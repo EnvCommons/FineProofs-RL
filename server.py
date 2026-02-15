@@ -14,6 +14,7 @@ import re
 import pandas as pd
 import openai
 from pydantic import BaseModel
+import os
 
 from openreward.environments import Environment, JSONObject, Server, TextBlock, ToolOutput, tool
 
@@ -43,7 +44,10 @@ Score: [Integer from 0 to 7]
 
 
 # Data loading (module level) - loads parquet and extracts task info
-test_tasks = pd.read_parquet("fineproofs_train.parquet").to_dict(orient="records")
+if os.path.exists("/orwd_data"):
+    test_tasks = pd.read_parquet("/orwd_data/fineproofs_train.parquet").to_dict(orient="records")
+else:
+    test_tasks = pd.read_parquet("fineproofs_train.parquet").to_dict(orient="records")
 
 # Extract rubrics into separate dict (not exposed to agent)
 RUBRICS_DICT = {}
