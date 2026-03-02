@@ -70,7 +70,7 @@ The dataset includes 128 rollouts per problem from Qwen3-4B-Thinking, providing 
 | Medium | 0.3 – 0.7 | ~45% |
 | Challenging | ≥ 0.7 | ~25% |
 
-Overall dataset mean reward is 0.41, indicating median difficulty. Problems span IMO, APMO, USAMO, USAJMO, and AoPS competitions.
+Overall dataset mean reward is 0.41. Problems span IMO, APMO, USAMO, USAJMO, and AoPS competitions.
 
 ## Other Environment Requirements
 
