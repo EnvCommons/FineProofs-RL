@@ -29,7 +29,7 @@ There is one split in this environment:
   - **Art of Problem Solving (AoPS)**: 3,794 problems
   - **International Olympiad competitions** (IMO, APMO, USAMO, USAJMO): 1,433 problems
 
-Each task presents a mathematical problem statement to the agent. The grading rubric is hidden from the agent and used only by the LLM grader during evaluation.
+Each task presents a mathematical problem statement. The grader uses checkpoint-based rubrics with specific point allocations for major conceptual steps, partial credit for intermediate progress, and deductions for logical gaps vs. arithmetic errors.
 
 ## Reward Structure
 
@@ -58,18 +58,19 @@ Agents have access to a single tool:
 
 ## Time Horizon
 
-Single-turn. The agent reads the problem and submits one proof.
+FineProofs-RL is a single-turn environment. The agent reads the problem and submits one proof for a total of one tool call.
 
 ## Environment Difficulty
 
-Tasks are Olympiad-level math problems from IMO, APMO, USAMO, USAJMO, and AoPS competitions. Recent evaluations on similar benchmarks show that LLMs struggle significantly with proof generation:
+The dataset includes 128 rollouts per problem from Qwen3-4B-Thinking, providing difficulty estimates:
 
-| Model | 2025 USAMO Score |
-|-------|------------------|
-| Gemini-2.5-Pro | 25% |
-| All other models | <5% |
+| Difficulty | reward_mean | Proportion |
+|------------|-------------|------------|
+| Easier | < 0.3 | ~30% |
+| Medium | 0.3 – 0.7 | ~45% |
+| Challenging | ≥ 0.7 | ~25% |
 
-The QED-Nano project demonstrates that specialized 4B-parameter models trained with reinforcement learning can approach larger models' performance on proof tasks, but the rubric-based grading requires both correct reasoning and clear mathematical argumentation.
+Overall dataset mean reward is 0.41, indicating median difficulty. Problems span IMO, APMO, USAMO, USAJMO, and AoPS competitions.
 
 ## Other Environment Requirements
 
