@@ -1,7 +1,6 @@
 # FineProofs-RL
 
-[![OpenReward Environment](https://img.shields.io/badge/%E2%AD%90%20OpenReward-Environment-f7e6cc)](https://openreward.ai/GeneralReasoning/FineProofsRL)
-[![Hugging Face Dataset](https://img.shields.io/badge/Hugging%20Face-Dataset-orange)](https://huggingface.co/datasets/lm-provers/FineProofs-RL)
+[![⭐ OpenReward Environment](https://img.shields.io/badge/%E2%AD%90%20OpenReward-Environment-f7e6cc)](https://openreward.ai/GeneralReasoning/FineProofsRL) [![Hugging Face Dataset](https://img.shields.io/badge/Hugging%20Face-Dataset-orange)](https://huggingface.co/datasets/lm-provers/FineProofs-RL)
 
 ## Description
 
@@ -16,7 +15,7 @@ FineProofs-RL is an environment for evaluating mathematical proof generation. Gi
 
 ## Compute Requirements
 
-Agents are given a standard environment with no sandbox or file system access.
+This is a single-turn environment with no sandbox.
 
 ## License
 
@@ -34,11 +33,22 @@ Each task presents a mathematical problem statement to the agent. The grading ru
 
 ## Reward Structure
 
-This is a single-turn, LLM-graded reward environment. The agent submits a proof via the `submit_proof` tool. An LLM grader (gpt-5-mini) evaluates the proof against a hidden rubric on a 0-7 integer scale with partial credit. The reward is normalized as `score / 7.0`, giving a continuous range from 0.0 to 1.0.
+This is a single-turn environment with continuous reward (0.0–1.0):
+
+The agent submits a proof via the `submit_proof` tool. An LLM grader (gpt-5-mini with medium reasoning effort) evaluates the proof against a hidden rubric on a 0–7 integer scale:
+
+- **7/7 (reward 1.0)**: Complete, rigorous proof with all checkpoints satisfied
+- **4-6/7 (reward 0.57–0.86)**: Partial credit for correct reasoning with minor gaps
+- **1-3/7 (reward 0.14–0.43)**: Some correct steps but significant issues
+- **0/7 (reward 0.0)**: Incorrect or missing proof
+
+The final reward is `score / 7.0`, normalized to the 0.0–1.0 range.
 
 ## Data
 
-The dataset is sourced from [lm-provers/FineProofs-RL](https://huggingface.co/datasets/lm-provers/FineProofs-RL) on Hugging Face. It contains `fineproofs_train.parquet` with mathematical problems, grading rubrics, and reward annotations. Data files are stored on the OpenReward platform.
+Data consists of a single Parquet file (`fineproofs_train.parquet`) containing 5,227 olympiad-level mathematical problems. Each instance includes the problem statement, source attribution (AoPS or competition name), and a detailed grading rubric with checkpoints for evaluation.
+
+Source: [lm-provers/FineProofs-RL](https://huggingface.co/datasets/lm-provers/FineProofs-RL)
 
 ## Tools
 
@@ -52,7 +62,14 @@ Single-turn. The agent reads the problem and submits one proof.
 
 ## Environment Difficulty
 
-Tasks are Olympiad-level math problems from IMO, APMO, USAMO, USAJMO, and AoPS competitions. The rubric-based grading requires proofs that demonstrate both correct reasoning and clear mathematical argumentation.
+Tasks are Olympiad-level math problems from IMO, APMO, USAMO, USAJMO, and AoPS competitions. Recent evaluations on similar benchmarks show that LLMs struggle significantly with proof generation:
+
+| Model | 2025 USAMO Score |
+|-------|------------------|
+| Gemini-2.5-Pro | 25% |
+| All other models | <5% |
+
+The QED-Nano project demonstrates that specialized 4B-parameter models trained with reinforcement learning can approach larger models' performance on proof tasks, but the rubric-based grading requires both correct reasoning and clear mathematical argumentation.
 
 ## Other Environment Requirements
 
