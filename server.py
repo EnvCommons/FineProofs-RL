@@ -165,19 +165,14 @@ class FineProofsRL(Environment):
 
         try:
             # Use gpt-5-mini with medium reasoning effort
-            response = await self.client.responses.create(
+            response = await self.client.chat.completions.create(
                 model="gpt-5-mini",
-                reasoning={"effort": "medium"},
-                input=[{"role": "user", "content": grader_prompt}]
+                reasoning_effort="medium",
+                messages=[{"role": "user", "content": grader_prompt}]
             )
 
-            # Extract text from responses API output
-            grading_response = ""
-            for item in response.output:
-                if hasattr(item, 'text') and item.text:
-                    grading_response += item.text
-                elif hasattr(item, 'content'):
-                    grading_response += str(item.content)
+            # Extract text from chat completions output
+            grading_response = response.choices[0].message.content or ""
 
             # Parse score with fallback
             score = self._parse_score(grading_response)
