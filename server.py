@@ -97,7 +97,7 @@ class FineProofsRL(Environment):
                 "OpenAI API key required in secrets for grading. "
                 "Pass via secrets={'openai_api_key': 'your-key'}"
             )
-        self.client = openai.AsyncClient(api_key=api_key)
+        self.client = openai.AsyncClient(api_key=api_key, max_retries=5)
 
         # Retrieve rubric for this task (hidden from agent)
         self.rubric = RUBRICS_DICT.get(self.config.id, "")
@@ -156,6 +156,9 @@ class FineProofsRL(Environment):
         - score (int 0-7)
         - reward (float 0.0-1.0)
         - grading_response (str)
+
+        Raises RuntimeError if the grader service fails (e.g. 502), so the
+        tool call errors instead of finishing the rollout with reward 0.
         """
         grader_prompt = GRADER_TEMPLATE.format(
             problem=self.config.problem,
@@ -170,26 +173,23 @@ class FineProofsRL(Environment):
                 reasoning_effort="medium",
                 messages=[{"role": "user", "content": grader_prompt}]
             )
-
-            # Extract text from chat completions output
-            grading_response = response.choices[0].message.content or ""
-
-            # Parse score with fallback
-            score = self._parse_score(grading_response)
-            reward = score / 7.0  # Simple normalization
-
-            return {
-                "score": score,
-                "reward": reward,
-                "grading_response": grading_response,
-            }
         except Exception as e:
-            # Fallback on grading error
-            return {
-                "score": 0,
-                "reward": 0.0,
-                "grading_response": f"Grading failed: {str(e)}",
-            }
+            # Grader service failure (e.g. 502) must not count as a scored
+            # rollout — surface it as a tool error instead.
+            raise RuntimeError(f"Grading failed: {e}") from e
+
+        # Extract text from chat completions output
+        grading_response = response.choices[0].message.content or ""
+
+        # Parse score with fallback
+        score = self._parse_score(grading_response)
+        reward = score / 7.0  # Simple normalization
+
+        return {
+            "score": score,
+            "reward": reward,
+            "grading_response": grading_response,
+        }
 
     def _parse_score(self, grading_response: str) -> int:
         """
