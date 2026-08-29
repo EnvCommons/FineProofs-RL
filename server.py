@@ -102,6 +102,9 @@ class FineProofsRL(Environment):
         # Retrieve rubric for this task (hidden from agent)
         self.rubric = RUBRICS_DICT.get(self.config.id, "")
 
+        # Number of proofs submitted this session — only the first is graded/rewarded
+        self.submitted = 0
+
     @classmethod
     def list_splits(cls) -> list[str]:
         """Return available data splits"""
@@ -126,6 +129,22 @@ class FineProofsRL(Environment):
         The proof will be evaluated against a rubric (0-7 scale) by an expert grader.
         You will receive a score, reward, and detailed feedback.
         """
+        # Only the first submission is graded and rewarded
+        if self.submitted > 0:
+            return ToolOutput(
+                blocks=[TextBlock(
+                    type="text",
+                    text="A proof has already been submitted for this task. This episode is over and no further grading or reward is given.",
+                )],
+                metadata={
+                    "task_id": self.config.id,
+                    "already_submitted": True,
+                    "submission_count": self.submitted,
+                },
+                reward=0.0,
+                finished=True,
+            )
+
         # Grade the proof
         grading_result = await self._grade_proof(params.proof)
 
@@ -135,6 +154,8 @@ class FineProofsRL(Environment):
 
         # Format display message
         display_text = f"{grading_response}\n\n**Score: {score}/7 | Reward: {reward:.2f}**"
+
+        self.submitted += 1
 
         return ToolOutput(
             blocks=[TextBlock(type="text", text=display_text)],
