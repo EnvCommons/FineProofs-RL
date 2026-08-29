@@ -18,6 +18,11 @@ import os
 
 from openreward.environments import Environment, JSONObject, Server, TextBlock, ToolOutput, tool
 
+# Reward for a submission made after the task has already been graded. Negative
+# so repeat submissions are actively discouraged, not merely left unscored.
+REPEAT_SUBMISSION_PENALTY = -0.1
+
+
 
 # Grader template for 0-7 scoring with full rubric
 GRADER_TEMPLATE = """You are an expert mathematician evaluating olympiad-level proofs.
@@ -134,14 +139,14 @@ class FineProofsRL(Environment):
             return ToolOutput(
                 blocks=[TextBlock(
                     type="text",
-                    text="A proof has already been submitted for this task. This episode is over and no further grading or reward is given.",
+                    text="A proof has already been submitted for this task. This episode is over: the proof is not re-graded, and repeat submissions are penalised (reward -0.1).",
                 )],
                 metadata={
                     "task_id": self.config.id,
                     "already_submitted": True,
                     "submission_count": self.submitted,
                 },
-                reward=0.0,
+                reward=REPEAT_SUBMISSION_PENALTY,
                 finished=True,
             )
 
