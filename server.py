@@ -132,7 +132,7 @@ class FineProofsRL(Environment):
         Submit your proof for grading. This will end the episode.
 
         The proof will be evaluated against a rubric (0-7 scale) by an expert grader.
-        You will receive a score, reward, and detailed feedback.
+        You will receive a score and reward.
         """
         # Only the first submission is graded and rewarded
         if self.submitted > 0:
@@ -155,10 +155,10 @@ class FineProofsRL(Environment):
 
         score = grading_result["score"]
         reward = grading_result["reward"]
-        grading_response = grading_result["grading_response"]
 
-        # Format display message
-        display_text = f"{grading_response}\n\n**Score: {score}/7 | Reward: {reward:.2f}**"
+        # Format display message. The grader's analysis is not shown: it is
+        # written against the hidden rubric and names its checkpoints.
+        display_text = f"**Score: {score}/7 | Reward: {reward:.2f}**"
 
         self.submitted += 1
 
@@ -168,7 +168,6 @@ class FineProofsRL(Environment):
                 "task_id": self.config.id,
                 "score": score,
                 "reward": reward,
-                "grading_response": grading_response,
             },
             reward=reward,
             finished=True
