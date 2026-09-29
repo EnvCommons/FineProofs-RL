@@ -182,8 +182,9 @@ class FineProofsRL(Environment):
         - reward (float 0.0-1.0)
         - grading_response (str)
 
-        Raises RuntimeError if the grader service fails (e.g. 502), so the
-        tool call errors instead of finishing the rollout with reward 0.
+        Raises RuntimeError if the grader service fails (e.g. 502) or its reply
+        has no score, so the tool call errors instead of finishing the rollout
+        with reward 0.
         """
         grader_prompt = GRADER_TEMPLATE.format(
             problem=self.config.problem,
@@ -223,8 +224,10 @@ class FineProofsRL(Environment):
         Strategy:
         1. Look for "Score: X" pattern (primary)
         2. Fallback: Extract last number in response
-        3. Default to 0 if parsing fails
-        4. Clamp to [0, 7] range
+        3. Clamp to [0, 7] range
+
+        Raises RuntimeError if the response has no number at all (e.g. an empty
+        reply): that is a grader failure, not a score of 0.
         """
         # Look for "Score: X" pattern
         match = re.search(r"Score:\s*(\d+)", grading_response, re.IGNORECASE)
@@ -238,8 +241,7 @@ class FineProofsRL(Environment):
             score = int(numbers[-1])
             return max(0, min(7, score))
 
-        # Default to 0 if parsing fails
-        return 0
+        raise RuntimeError("Grading failed: grader reply had no score")
 
 
 # Server initialization
