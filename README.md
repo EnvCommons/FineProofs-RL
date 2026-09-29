@@ -54,7 +54,7 @@ Source: [lm-provers/FineProofs-RL](https://huggingface.co/datasets/lm-provers/Fi
 
 Agents have access to a single tool:
 
-- **`submit_proof`**: Submit a mathematical proof for rubric-based grading. Accepts a `proof` string parameter. Returns the grader score (0-7), normalized reward (0.0-1.0), and grader feedback. This tool ends the episode.
+- **`submit_proof`**: Submit a mathematical proof for rubric-based grading. Accepts a `proof` string parameter. Returns the grader score (0-7) and normalized reward (0.0-1.0). This tool ends the episode.
 
 ## Time Horizon
 

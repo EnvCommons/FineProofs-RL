@@ -132,7 +132,7 @@ class FineProofsRL(Environment):
         Submit your proof for grading. This will end the episode.
 
         The proof will be evaluated against a rubric (0-7 scale) by an expert grader.
-        You will receive a score, reward, and detailed feedback.
+        You will receive a score and reward.
         """
         # Only the first submission is graded and rewarded
         if self.submitted > 0:
@@ -155,10 +155,10 @@ class FineProofsRL(Environment):
 
         score = grading_result["score"]
         reward = grading_result["reward"]
-        grading_response = grading_result["grading_response"]
 
-        # Format display message
-        display_text = f"{grading_response}\n\n**Score: {score}/7 | Reward: {reward:.2f}**"
+        # Format display message. The grader's analysis is not shown: it is
+        # written against the hidden rubric and names its checkpoints.
+        display_text = f"**Score: {score}/7 | Reward: {reward:.2f}**"
 
         self.submitted += 1
 
@@ -168,7 +168,6 @@ class FineProofsRL(Environment):
                 "task_id": self.config.id,
                 "score": score,
                 "reward": reward,
-                "grading_response": grading_response,
             },
             reward=reward,
             finished=True
@@ -183,8 +182,9 @@ class FineProofsRL(Environment):
         - reward (float 0.0-1.0)
         - grading_response (str)
 
-        Raises RuntimeError if the grader service fails (e.g. 502), so the
-        tool call errors instead of finishing the rollout with reward 0.
+        Raises RuntimeError if the grader service fails (e.g. 502) or its reply
+        has no score, so the tool call errors instead of finishing the rollout
+        with reward 0.
         """
         grader_prompt = GRADER_TEMPLATE.format(
             problem=self.config.problem,
@@ -224,8 +224,10 @@ class FineProofsRL(Environment):
         Strategy:
         1. Look for "Score: X" pattern (primary)
         2. Fallback: Extract last number in response
-        3. Default to 0 if parsing fails
-        4. Clamp to [0, 7] range
+        3. Clamp to [0, 7] range
+
+        Raises RuntimeError if the response has no number at all (e.g. an empty
+        reply): that is a grader failure, not a score of 0.
         """
         # Look for "Score: X" pattern
         match = re.search(r"Score:\s*(\d+)", grading_response, re.IGNORECASE)
@@ -239,8 +241,7 @@ class FineProofsRL(Environment):
             score = int(numbers[-1])
             return max(0, min(7, score))
 
-        # Default to 0 if parsing fails
-        return 0
+        raise RuntimeError("Grading failed: grader reply had no score")
 
 
 # Server initialization
