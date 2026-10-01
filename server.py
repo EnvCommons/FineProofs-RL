@@ -22,6 +22,9 @@ from openreward.environments import Environment, JSONObject, Server, TextBlock, 
 # so repeat submissions are actively discouraged, not merely left unscored.
 REPEAT_SUBMISSION_PENALTY = -0.1
 
+# Grader replies without a score are re-sampled this many times before the call fails.
+GRADER_SCORE_ATTEMPTS = 3
+
 
 
 # Grader template for 0-7 scoring with full rubric
@@ -192,23 +195,30 @@ class FineProofsRL(Environment):
             rubric=self.rubric
         )
 
-        try:
-            # Use gpt-5-mini with medium reasoning effort
-            response = await self.client.chat.completions.create(
-                model="gpt-5-mini",
-                reasoning_effort="medium",
-                messages=[{"role": "user", "content": grader_prompt}]
-            )
-        except Exception as e:
-            # Grader service failure (e.g. 502) must not count as a scored
-            # rollout — surface it as a tool error instead.
-            raise RuntimeError(f"Grading failed: {e}") from e
+        score = None
+        for attempt in range(GRADER_SCORE_ATTEMPTS):
+            try:
+                # Use gpt-5-mini with medium reasoning effort
+                response = await self.client.chat.completions.create(
+                    model="gpt-5-mini",
+                    reasoning_effort="medium",
+                    messages=[{"role": "user", "content": grader_prompt}]
+                )
+            except Exception as e:
+                # Grader service failure (e.g. 502) must not count as a scored
+                # rollout — surface it as a tool error instead.
+                raise RuntimeError(f"Grading failed: {e}") from e
 
-        # Extract text from chat completions output
-        grading_response = response.choices[0].message.content or ""
+            # Extract text from chat completions output
+            grading_response = response.choices[0].message.content or ""
 
-        # Parse score with fallback
-        score = self._parse_score(grading_response)
+            # Parse score with fallback; a reply without one is re-sampled
+            score = self._parse_score(grading_response)
+            if score is not None:
+                break
+            print(f"Grader reply had no score (attempt {attempt + 1}/{GRADER_SCORE_ATTEMPTS})")
+        if score is None:
+            raise RuntimeError("Grading failed: grader reply had no score")
         reward = score / 7.0  # Simple normalization
 
         return {
@@ -217,7 +227,7 @@ class FineProofsRL(Environment):
             "grading_response": grading_response,
         }
 
-    def _parse_score(self, grading_response: str) -> int:
+    def _parse_score(self, grading_response: str) -> int | None:
         """
         Extract score from grading response with robust fallback.
 
@@ -226,7 +236,7 @@ class FineProofsRL(Environment):
         2. Fallback: Extract last number in response
         3. Clamp to [0, 7] range
 
-        Raises RuntimeError if the response has no number at all (e.g. an empty
+        Returns None if the response has no number at all (e.g. an empty
         reply): that is a grader failure, not a score of 0.
         """
         # Look for "Score: X" pattern
@@ -241,7 +251,7 @@ class FineProofsRL(Environment):
             score = int(numbers[-1])
             return max(0, min(7, score))
 
-        raise RuntimeError("Grading failed: grader reply had no score")
+        return None
 
 
 # Server initialization
