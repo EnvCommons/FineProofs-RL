@@ -35,12 +35,12 @@ Each task presents a mathematical problem statement. The grader uses checkpoint-
 
 This is a single-turn environment with continuous reward (0.0–1.0):
 
-The agent submits a proof via the `submit_proof` tool. An LLM grader (gpt-5-mini with medium reasoning effort) evaluates the proof against a hidden rubric on a 0–7 integer scale:
+The agent submits a proof via the `submit_proof` tool. An LLM grader (gpt-5-mini with medium reasoning effort) grades the proof at IMO standard on a 0–7 integer scale, using a hidden rubric as a guide to partial credit for one valid approach. A complete, rigorous proof earns 7 even if it uses a different method from the rubric. The grader is instructed to be strict: steps asserted without justification ("one can check", "verified by a computer algebra system") count as gaps, and false claims, circular reasoning, missing cases and wrong answers are penalised; length, confidence and formatting are not rewarded.
 
-- **7/7 (reward 1.0)**: Complete, rigorous proof with all checkpoints satisfied
-- **4-6/7 (reward 0.57–0.86)**: Partial credit for correct reasoning with minor gaps
-- **1-3/7 (reward 0.14–0.43)**: Some correct steps but significant issues
-- **0/7 (reward 0.0)**: Incorrect or missing proof
+- **7/7 (reward 1.0)**: Complete and rigorous proof, by any method
+- **6/7 (reward 0.86)**: Complete proof with a minor slip
+- **1-5/7 (reward 0.14–0.71)**: Partial progress, credited using the rubric
+- **0/7 (reward 0.0)**: No substantial progress, or a fatal flaw
 
 The final reward is `score / 7.0`, normalized to the 0.0–1.0 range.
 

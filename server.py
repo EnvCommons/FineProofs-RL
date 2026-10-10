@@ -28,7 +28,7 @@ GRADER_SCORE_ATTEMPTS = 3
 
 
 # Grader template for 0-7 scoring with full rubric
-GRADER_TEMPLATE = """You are an expert mathematician evaluating olympiad-level proofs.
+GRADER_TEMPLATE = """You are an expert olympiad grader. Grade the submitted proof at IMO standard.
 
 **Problem:**
 {problem}
@@ -36,17 +36,17 @@ GRADER_TEMPLATE = """You are an expert mathematician evaluating olympiad-level p
 **Submitted Proof:**
 {proof}
 
-**Grading Rubric (0-7 points total):**
+**Grading Rubric (a guide to partial credit for one valid approach; 0-7 points):**
 {rubric}
 
-**Instructions:**
-1. Evaluate the proof against each checkpoint in the rubric
-2. Award partial credit for partially correct work
-3. Provide brief analysis (2-3 sentences) explaining your scoring
-4. Assign an integer score from 0 to 7
+**Rules:**
+1. A complete and rigorous proof earns 7 even if it uses a different method from the rubric. Use the rubric to award partial credit to incomplete solutions.
+2. Be strict. A step asserted without justification ("routine computation", "one can check", "verified by a computer algebra system") is a gap unless it is genuinely trivial. Penalise false claims, circular reasoning, assuming the conclusion, missing cases and wrong answers.
+3. Do not reward length, confidence or formatting.
+4. 7 = complete and rigorous; 6 = complete with a minor slip; 1-5 = partial progress; 0 = no substantial progress or a fatal flaw.
 
 **Output Format:**
-Analysis: [Your 2-3 sentence explanation]
+Analysis: [2-4 sentences]
 Score: [Integer from 0 to 7]
 """
 
