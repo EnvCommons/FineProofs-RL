@@ -1,0 +1,102 @@
+{
+  "tested_at_utc": "2026-10-12T11:59:14.997757+00:00",
+  "transport": "OpenReward Async SDK -> local Uvicorn HTTP server -> resolve_backend -> live OpenAI Chat Completions",
+  "openreward_version": "0.1.160",
+  "openai_version": "2.24.0",
+  "server_sha256": "6e5eaee4daef117bcb2541af5158dce9018994eb500ce71e6ee1eb1ad538aea9",
+  "dataset_sha256": "7e9a560a303dea46c70b1deea2120945f044ec184538409b51665ec1b0028158",
+  "grader": "gpt-6-sol",
+  "reasoning_effort": "medium",
+  "max_completion_tokens": 24000,
+  "service_tier": "default",
+  "network_request_limit": 2,
+  "sdk_retries_for_this_test": 0,
+  "pricing_source": "https://developers.openai.com/api/docs/models/gpt-6-sol",
+  "pricing_usd_per_million": {
+    "input": 2,
+    "cached_input": 0.2,
+    "cache_write": 2.5,
+    "output": 10
+  },
+  "cases": [
+    {
+      "label": "complete_solution",
+      "candidate": "The denominator is at least 1, so the integrand is continuous on\n[0, pi/2]. First integrate up to b < pi/2. Set t = tan x, so\ndx = dt/(1+t^2) and cos^2 x = 1/(1+t^2). Consequently\ndx/(4-3 cos^2 x) = dt/(1+4t^2), and the limits become 0 and tan b.\nThus the integral up to b equals (1/2) arctan(2 tan b).\nTaking b to pi/2 from below gives (1/2)(pi/2) = pi/4.\nContinuity on the original closed interval justifies this limit.",
+      "expected_score": 7,
+      "result": {
+        "blocks": [
+          {
+            "text": "**Score: 7/7 | Reward: 1.00**",
+            "detail": null,
+            "type": "text"
+          }
+        ],
+        "metadata": {
+          "task_id": "4",
+          "score": 7,
+          "reward": 1.0,
+          "grader": "gpt-6-sol",
+          "grader_reasoning_effort": "medium"
+        },
+        "reward": 1.0,
+        "finished": true
+      }
+    }
+  ],
+  "calls": [
+    {
+      "returned_model": "gpt-6-sol",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 94,
+        "prompt_tokens": 784,
+        "total_tokens": 878,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        }
+      },
+      "estimated_api_cost_usd": 0.002508,
+      "elapsed_seconds": 3.512,
+      "validation_note": "Live grading completed, but the test report writer failed before recording the score (SDK dataclass serialization)."
+    },
+    {
+      "returned_model": "gpt-6-sol",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 89,
+        "prompt_tokens": 784,
+        "total_tokens": 873,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        }
+      },
+      "estimated_api_cost_usd": 0.002458,
+      "elapsed_seconds": 2.182
+    }
+  ],
+  "train_tasks": 5227,
+  "task_spec": {
+    "problem": "  $$ \\int_0^\\frac{\\pi}{2}\\frac{1}{4-3\\cos^2(x)}\\,dx $$  *Proposed by Connor Gordon*",
+    "source": "aops",
+    "id": "4"
+  },
+  "actual_network_requests": 2,
+  "estimated_total_api_cost_usd": 0.004966,
+  "passed": true
+}

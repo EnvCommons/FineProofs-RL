@@ -1,6 +1,6 @@
 # FineProofs-RL
 
-[![⭐ OpenReward Environment](https://img.shields.io/badge/%E2%AD%90%20OpenReward-Environment-f7e6cc)](https://openreward.ai/GeneralReasoning/FineProofsRL) [![Hugging Face Dataset](https://img.shields.io/badge/Hugging%20Face-Dataset-orange)](https://huggingface.co/datasets/lm-provers/FineProofs-RL)
+[![⭐ OpenReward Environment](https://img.shields.io/badge/%E2%AD%90%20OpenReward-Environment-f7e6cc)](https://openreward.ai/GeneralReasoning/FineProofs-RL) [![Hugging Face Dataset](https://img.shields.io/badge/Hugging%20Face-Dataset-orange)](https://huggingface.co/datasets/lm-provers/FineProofs-RL)
 
 ## Description
 
@@ -35,7 +35,7 @@ Each task presents a mathematical problem statement. The grader uses checkpoint-
 
 This is a single-turn environment with continuous reward (0.0–1.0):
 
-The agent submits a proof via the `submit_proof` tool. An LLM grader (gpt-5-mini with medium reasoning effort) grades the proof at IMO standard on a 0–7 integer scale, using a hidden rubric as a guide to partial credit for one valid approach. A complete, rigorous proof earns 7 even if it uses a different method from the rubric. The grader is instructed to be strict: steps asserted without justification ("one can check", "verified by a computer algebra system") count as gaps, and false claims, circular reasoning, missing cases and wrong answers are penalised; length, confidence and formatting are not rewarded.
+The agent submits a proof via the `submit_proof` tool. An LLM grader (`gpt-6-sol` with medium reasoning effort) grades the proof at IMO standard on a 0–7 integer scale, using a hidden rubric as a guide to partial credit for one valid approach. A complete, rigorous proof earns 7 even if it uses a different method from the rubric. The grader is instructed to be strict: steps asserted without justification ("one can check", "verified by a computer algebra system") count as gaps, and false claims, circular reasoning, missing cases and wrong answers are penalised; length, confidence and formatting are not rewarded.
 
 - **7/7 (reward 1.0)**: Complete and rigorous proof, by any method
 - **6/7 (reward 0.86)**: Complete proof with a minor slip
@@ -74,7 +74,9 @@ Overall dataset mean reward is 0.41. Problems span IMO, APMO, USAMO, USAJMO, and
 
 ## Other Environment Requirements
 
-OpenAI API key required for LLM-based proof grading. Pass via `secrets={"openai_api_key": "..."}`.
+A grader API key is required in session secrets as `openai_api_key` or `chat_api_key`. Grading uses OpenReward's `resolve_backend` with the OpenAI provider. With `openai_api_key`, the backend follows `OPENAI_BASE_URL`; `chat_api_key`, `CHAT_API_KEY` or `CHAT_BASE_URL` select a dedicated judge channel. The configured endpoint must serve `gpt-6-sol` and accept `reasoning_effort="medium"` in Chat Completions. When passing `chat_api_key` through the OpenReward SDK, specify its allowed domain: `secrets={"chat_api_key": (key, ["api.openai.com"])}` (or the host of your judge gateway).
+
+Requests use standard service tier, no temperature parameter and a 24,000-token completion limit (including reasoning). The backend uses the SDK's default transient-error retry policy. Incomplete or scoreless replies are retried up to three grading attempts; exhausted retries remain grading errors and are not converted into zero rewards. Grader analysis remains private.
 
 ## Safety
 
@@ -91,3 +93,8 @@ Agents in FineProofs-RL write mathematical proofs in a standard environment. The
   note = {Blog post}
 }
 ```
+
+
+## Local Validation
+
+Run `python -m pytest tests.py -q` with the dependencies from `requirements.txt`. Tests use a temporary one-task dataset and scripted model responses, without paid calls. The real dataset can be supplied as `fineproofs_train.parquet` in the working directory or through `/orwd_data` on the platform. See [VALIDATION.md](VALIDATION.md) for the local server and live model checks.

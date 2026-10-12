@@ -3,7 +3,7 @@ FineProofs-RL Environment
 
 Mathematical proof generation and evaluation environment using LLM-based grading.
 Agents are presented with olympiad-level problems and must generate proofs that are
-graded against detailed rubrics (0-7 scale) by gpt-5-mini with medium reasoning effort.
+graded against detailed rubrics (0-7 scale) by gpt-6-sol with medium reasoning effort.
 
 Dataset: HuggingFace lm-provers/FineProofs-RL (5,227 problems)
 """
@@ -12,11 +12,15 @@ from __future__ import annotations
 
 import re
 import pandas as pd
-import openai
 from pydantic import BaseModel
 import os
 
 from openreward.environments import Environment, JSONObject, Server, TextBlock, ToolOutput, tool
+from openreward.chat_backends import resolve_backend
+
+JUDGE_MODEL = "gpt-6-sol"
+JUDGE_REASONING_EFFORT = "medium"
+JUDGE_MAX_COMPLETION_TOKENS = 24_000
 
 # Reward for a submission made after the task has already been graded. Negative
 # so repeat submissions are actively discouraged, not merely left unscored.
@@ -91,21 +95,22 @@ class FineProofsRL(Environment):
     Environment for mathematical proof generation and evaluation.
 
     Agents are presented with olympiad-level math problems and must submit proofs.
-    Proofs are graded by gpt-5-mini with medium reasoning effort using detailed rubrics (0-7 scale).
+    Proofs are graded by gpt-6-sol with medium reasoning effort using detailed rubrics (0-7 scale).
     """
 
     def __init__(self, task_spec: JSONObject, secrets: dict[str, str] = {}):
         super().__init__(task_spec)
         self.config = TaskSpec.model_validate(task_spec)
 
-        # Get OpenAI client from secrets (NO env var fallback)
-        api_key = secrets.get("openai_api_key")
-        if not api_key:
+        # Require a session credential. The framework backend preserves gateway
+        # routing and supports a dedicated judge endpoint via CHAT_* settings.
+        api_key = secrets.get("chat_api_key") or secrets.get("openai_api_key")
+        if not api_key or not api_key.strip():
             raise ValueError(
                 "OpenAI API key required in secrets for grading. "
-                "Pass via secrets={'openai_api_key': 'your-key'}"
+                "Pass openai_api_key or chat_api_key."
             )
-        self.client = openai.AsyncClient(api_key=api_key, max_retries=5)
+        self.client = resolve_backend(provider="openai", secrets=secrets)
 
         # Retrieve rubric for this task (hidden from agent)
         self.rubric = RUBRICS_DICT.get(self.config.id, "")
@@ -171,6 +176,8 @@ class FineProofsRL(Environment):
                 "task_id": self.config.id,
                 "score": score,
                 "reward": reward,
+                "grader": JUDGE_MODEL,
+                "grader_reasoning_effort": JUDGE_REASONING_EFFORT,
             },
             reward=reward,
             finished=True
@@ -178,7 +185,7 @@ class FineProofsRL(Environment):
 
     async def _grade_proof(self, proof: str) -> dict:
         """
-        Grade proof using gpt-5-mini with medium reasoning effort and rubric-based evaluation.
+        Grade proof using gpt-6-sol with medium reasoning effort and rubric-based evaluation.
 
         Returns dict with:
         - score (int 0-7)
@@ -198,10 +205,11 @@ class FineProofsRL(Environment):
         score = None
         for attempt in range(GRADER_SCORE_ATTEMPTS):
             try:
-                # Use gpt-5-mini with medium reasoning effort
-                response = await self.client.chat.completions.create(
-                    model="gpt-5-mini",
-                    reasoning_effort="medium",
+                response = await self.client.create(
+                    model=JUDGE_MODEL,
+                    reasoning_effort=JUDGE_REASONING_EFFORT,
+                    max_completion_tokens=JUDGE_MAX_COMPLETION_TOKENS,
+                    service_tier="default",
                     messages=[{"role": "user", "content": grader_prompt}]
                 )
             except Exception as e:
@@ -209,11 +217,12 @@ class FineProofsRL(Environment):
                 # rollout — surface it as a tool error instead.
                 raise RuntimeError(f"Grading failed: {e}") from e
 
-            # Extract text from chat completions output
-            grading_response = response.choices[0].message.content or ""
+            grading_response = response.text
 
             # Parse score with fallback; a reply without one is re-sampled
-            score = self._parse_score(grading_response)
+            # A truncated/refused reply is not a completed assessment, even if
+            # its partial text happens to contain a number or a score label.
+            score = self._parse_score(grading_response) if response.finish_reason == "stop" else None
             if score is not None:
                 break
             print(f"Grader reply had no score (attempt {attempt + 1}/{GRADER_SCORE_ATTEMPTS})")
@@ -252,6 +261,9 @@ class FineProofsRL(Environment):
             return max(0, min(7, score))
 
         return None
+
+    async def teardown(self) -> None:
+        await self.client.aclose()
 
 
 # Server initialization
