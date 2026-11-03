@@ -19,7 +19,7 @@ This is a single-turn environment with no sandbox.
 
 ## License
 
-[Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+[MIT](https://opensource.org/licenses/MIT). The underlying FineProofs-RL dataset is released under Apache 2.0.
 
 ## Tasks
 
@@ -27,13 +27,13 @@ There is one split in this environment:
 
 - **train**: 5,227 problems sourced from:
   - **Art of Problem Solving (AoPS)**: 3,794 problems
-  - **International Olympiad competitions** (IMO, APMO, USAMO, USAJMO): 1,433 problems
+  - **Olympiad competitions** (IMO, APMO, USAMO, USAJMO and other olympiads): 1,433 problems
 
 Each task presents a mathematical problem statement. The grader uses checkpoint-based rubrics with specific point allocations for major conceptual steps, partial credit for intermediate progress, and deductions for logical gaps vs. arithmetic errors.
 
 ## Reward Structure
 
-This is a single-turn environment with continuous reward (0.0–1.0):
+This is a single-turn environment with continuous reward (0.0–1.0).
 
 The agent submits a proof via the `submit_proof` tool. An LLM grader (`gpt-6-sol` with medium reasoning effort) grades the proof at IMO standard on a 0–7 integer scale, using a hidden rubric as a guide to partial credit for one valid approach. A complete, rigorous proof earns 7 even if it uses a different method from the rubric. The grader is instructed to be strict: steps asserted without justification ("one can check", "verified by a computer algebra system") count as gaps, and false claims, circular reasoning, missing cases and wrong answers are penalised; length, confidence and formatting are not rewarded.
 
@@ -42,7 +42,7 @@ The agent submits a proof via the `submit_proof` tool. An LLM grader (`gpt-6-sol
 - **1-5/7 (reward 0.14–0.71)**: Partial progress, credited using the rubric
 - **0/7 (reward 0.0)**: No substantial progress, or a fatal flaw
 
-The final reward is `score / 7.0`, normalized to the 0.0–1.0 range.
+The final reward is `score / 7.0`, normalized to the 0.0–1.0 range. Only the first submission is graded; any later `submit_proof` call in the same episode returns a reward of -0.1.
 
 ## Data
 
@@ -62,15 +62,15 @@ FineProofs-RL is a single-turn environment. The agent reads the problem and subm
 
 ## Environment Difficulty
 
-The dataset includes 128 rollouts per problem from Qwen3-4B-Thinking, providing difficulty estimates:
+The dataset includes a `reward_mean` per problem from (typically) 128 rollouts of Qwen3-4B-Thinking-2507, each graded by gpt-oss-20b. This is a difficulty estimate from the dataset authors, not from this environment's grader:
 
-| Difficulty | reward_mean | Proportion |
-|------------|-------------|------------|
-| Easier | < 0.3 | ~30% |
-| Medium | 0.3 – 0.7 | ~45% |
-| Challenging | ≥ 0.7 | ~25% |
+| reward_mean | Proportion of problems |
+|-------------|------------------------|
+| < 0.3 (hardest) | 51% |
+| 0.3 – 0.7 | 22% |
+| ≥ 0.7 (easiest) | 28% |
 
-Overall dataset mean reward is 0.41. Problems span IMO, APMO, USAMO, USAJMO, and AoPS competitions.
+The mean `reward_mean` across all 5,227 problems is 0.40.
 
 ## Other Environment Requirements
 
@@ -85,6 +85,14 @@ Agents in FineProofs-RL write mathematical proofs in a standard environment. The
 ## Citations
 
 ```bibtex
+@dataset{fineproofs_rl_dataset_2026,
+  title={FineProofs RL: Mathematical Olympiad Problems with Rubrics and Reward Annotations},
+  author={Jasper Dekoninck and Jia Li and Yuxiao Qu and Amrith Setlur and Ian Wu and Edward Beeching and Aviral Kumar and Lewis Tunstall},
+  year={2026},
+  publisher={Hugging Face},
+  howpublished={\url{https://huggingface.co/datasets/lm-provers/FineProofs-RL}}
+}
+
 @misc{qednano2026,
   title = {QED-Nano: Teaching a Tiny Model to Prove Hard Theorems},
   author = {Yuxiao Qu and Amrith Setlur and Jasper Dekoninck and Edward Beeching and Jia Li and Ian Wu and Lewis Tunstall and Aviral Kumar},
